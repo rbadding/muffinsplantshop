@@ -11,6 +11,13 @@ The original author is [https://github.com/nhuynh1](Nancy), who we want to thank
 - A *database* at Aamu.app and an API key to this database.
 - A [Stripe](https://stripe.com/) account and a secret key (testing key is OK).
 
+## Installation
+
+- Click "Deploy to Netlify"
+- Insert your secret keys
+- After Netlify is done building, edit the file `config-client.js` and insert your Stripe public key
+- After Netlify is done building again, the everything should work. If not, go through every step to make sure everything was done correctly.
+
 ## Live demo hosted on Netlify
 [https://aamu-muffinsplantshop.netlify.app/](https://aamu-muffinsplantshop.netlify.app/)
 
