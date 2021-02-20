@@ -21,7 +21,7 @@ Card payment via Stripe in testing mode; please use testing card details shown o
 
 You can deploy this on Netlify: 
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/AamuApp/aamu-muffinsplantshop)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/AamuApp/muffinsplantshop)
 
 Deployment to Netlify asks your **Aamu.app API key** and **Stripe Secret key**.
 
