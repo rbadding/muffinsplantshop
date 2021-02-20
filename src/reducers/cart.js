@@ -1,23 +1,23 @@
-const sku = ({ sku, size }) => `${sku}-${size}`
+const updateQuantity = (state, product, quantity) => {
+    quantity = parseInt(quantity, 10);
 
-const updateQuantity = (state, sku, quantity) => {
-    return state.map(product => {
-        if (product.sku === sku) {
+    return state.map(_product => {
+        if (_product.variant.id === product.variant.id && typeof quantity == 'number') {
             return { ...product, quantity: quantity };
         } else {
-            return product;
+            return _product;
         }
     });
 }
 const addProduct = (state, product) => {
-    const foundProduct = state.find(_product => _product.sku === sku(product));
+    // console.log(product);
+    const foundProduct = state.find(_product => _product.variant.id === product.variant.id);
 
     if (foundProduct) {
         const quantity = parseInt(foundProduct.quantity, 10) + 1;
-        return updateQuantity(state, sku(product), quantity)
+        return updateQuantity(state, product, quantity)
     } else {
-        const productData = { ...product, sku: sku(product) }
-        return [...state, productData];
+        return [...state, product];
     }
 }
 
@@ -26,10 +26,9 @@ const cartReducer = (state, action) => {
         case 'ADD_TO_CART':
             return addProduct(state, action.product);
         case 'UPDATE_QUANTITY':
-            const { sku, quantity } = action;
-            return updateQuantity(state, sku, quantity);
+            return updateQuantity(state, action.product, action.quantity);
         case 'REMOVE_FROM_CART':
-            return state.filter(product => product.sku !== action.sku);
+            return state.filter(_product => _product.variant.id !== action.product.variant.id);
         case 'CLEAR_CART':
             return [];
         case 'SET_CART':

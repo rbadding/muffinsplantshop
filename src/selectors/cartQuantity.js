@@ -10,4 +10,4 @@ const cartAmountTotal = (cart) => {
     }, 0.00)
 }
 
-export { cartQuantityTotal, cartAmountTotal };
+module.exports = { cartQuantityTotal, cartAmountTotal };

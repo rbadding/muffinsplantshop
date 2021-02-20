@@ -5,9 +5,10 @@ import { Elements } from '@stripe/react-stripe-js';
 import CheckoutForm from '../components/checkout-form/checkout-form';
 import Layout from '../components/layout/layout';
 import SEO from '../components/seo';
+import config from '../../config-client.js';
 
 const Checkout = ({ location }) => {
-    const promise = loadStripe('pk_test_51HZH64Ftxr5x8qZUweU2PctrS7eRgFIRYYMjnZsiRTDLwQqd8yJ2bZxbFnxv3lD2AvwPx6vvpZkXKxTbJhWsKJhv00MpHObXp8');
+    const promise = loadStripe(config.stripe);
 
     return (
         <Layout location={location}>

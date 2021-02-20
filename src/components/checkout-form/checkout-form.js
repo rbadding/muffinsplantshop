@@ -121,6 +121,7 @@ export const ShippingForm = ({ setValues, setSection, shippingValues }) => {
                         value={values.provinceTerritory}
                         id="provinceTerritory"
                         name="provinceTerritory"
+                        onBlur={handleChange}
                         onChange={handleChange}>
                         <option value="">Select</option>
                         <option value="AB">Alberta</option>
@@ -349,6 +350,7 @@ export const BillingForm = ({ setValues, shippingValues, setSection, sameAsShipp
                             value={values.provinceTerritory}
                             id="provinceTerritory"
                             name="provinceTerritory"
+                            onBlur={handleChange}
                             onChange={handleChange}>
                             <option value="">Select</option>
                             <option value="AB">Alberta</option>
@@ -417,7 +419,7 @@ const PaymentForm = ({ clientSecret, shippingValues, billingValues, sameAsShippi
     const [disabled, setDisabled] = useState(true);
     const stripe = useStripe();
     const elements = useElements();
-    const { cartDispatch } = useCartContext();
+    const { cart, cartDispatch } = useCartContext();
 
     const cardOptions = {
         hidePostalCode: true,
@@ -441,6 +443,7 @@ const PaymentForm = ({ clientSecret, shippingValues, billingValues, sameAsShippi
 
     const handleCheckout = async (ev) => {
         ev.preventDefault();
+        console.log('setProcessing(true);');
         setProcessing(true);
 
         const billing_address = {
@@ -465,7 +468,8 @@ const PaymentForm = ({ clientSecret, shippingValues, billingValues, sameAsShippi
             payment_method: {
                 card: elements.getElement(CardElement),
                 billing_details: {
-                    address: billing_address
+                    address: billing_address,
+                    email: shippingValues.email
                 }
             },
             shipping: {
@@ -473,6 +477,7 @@ const PaymentForm = ({ clientSecret, shippingValues, billingValues, sameAsShippi
                 address: shipping_address
             },
         });
+
         if (payload.error) {
             setError(`Payment failed ${payload.error.message}`);
             setProcessing(false);
@@ -480,8 +485,53 @@ const PaymentForm = ({ clientSecret, shippingValues, billingValues, sameAsShippi
             setError(null);
             setProcessing(false);
             setSucceeded(true);
-            cartDispatch({ type: 'CLEAR_CART' });
-            navigate("/success");
+
+            if (cart.length === 0) return;
+
+            const items = cart.map(item => (
+                {
+                    sku: item.sku,
+                    title: item.title,
+                    variant: item.variant,
+                    quantity: item.quantity
+                }
+            ))
+
+            // Update inventory on the server (decrease in stock quantities)
+            window
+                .fetch("/.netlify/functions/update-inventory", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        items
+                    })
+                })
+                .then(res => {
+                    return new Promise((accept, reject) => {
+                        res.json().then((json) => {
+                            accept({
+                                status: res.status,
+                                json
+                            })
+                        })
+                    });
+                })
+                .then(data => {
+                    console.log(data);
+                    
+                    if (data.status === 200) {
+
+                    }
+
+                    cartDispatch({ type: 'CLEAR_CART' });
+                    navigate("/success");
+                })
+                .catch((err) => {
+                    console.error(err.toString());
+                });
+
         }
     }
 
@@ -506,8 +556,8 @@ const PaymentForm = ({ clientSecret, shippingValues, billingValues, sameAsShippi
                         className={styles.checkoutForm__submitButton}
                         disabled={processing || disabled || succeeded}
                         type="submit">
-                        Place order
-                </button>
+                        {(processing && 'Processing...') || 'Place order'}
+                    </button>
                 </form>)}
             {succeeded && <p>Test payment succeeded!</p>}
         </div>
@@ -519,6 +569,7 @@ const CheckoutForm = () => {
     const [shippingValues, setShippingValues] = useState();
     const [billingValues, setBillingValues] = useState();
     const [sameAsShipping, setSameAsShipping] = useState(true);
+    const [stripeError, setStripeError] = useState('');
     const haveBillingInfo = billingValues || (sameAsShipping && shippingValues);
 
     const [clientSecret, setClientSecret] = useState('');
@@ -531,10 +582,16 @@ const CheckoutForm = () => {
         const items = cart.map(item => (
             {
                 sku: item.sku,
-                quantity: item.quantity,
-                size: item.size
+                title: item.title,
+                variant: item.variant,
+                quantity: item.quantity
             }
         ))
+
+        const shipping = shippingValues.shipping;
+        const state = shippingValues.provinceTerritory;
+        setStripeError('');
+        setClientSecret('');
 
         window
             .fetch("/.netlify/functions/stripe-checkout", {
@@ -544,15 +601,31 @@ const CheckoutForm = () => {
                 },
                 body: JSON.stringify({
                     items,
-                    shipping: shippingValues.shipping,
-                    state: shippingValues.provinceTerritory
+                    shipping,
+                    state
                 })
             })
             .then(res => {
-                return res.json();
+                return new Promise((accept, reject) => {
+                    res.json().then((json) => {
+                        accept({
+                            status: res.status,
+                            json
+                        })
+                    })
+                });
             })
             .then(data => {
-                setClientSecret(data.clientSecret);
+                if (data.status === 200) {
+
+                    setClientSecret(data.json.clientSecret);
+                }
+                else {
+                    throw new Error("Response status: " + data.status + " ("+data.json.error+")")
+                }
+            })
+            .catch((err) => {
+                setStripeError(err.toString());
             });
     }, [section, shippingValues, cart]);
 
@@ -570,42 +643,47 @@ const CheckoutForm = () => {
                         section="shipping"
                         setSection={setSection}>
                         1. Shipping
-                </CheckoutHeading>
+                    </CheckoutHeading>
+                        <div className={styles.checkoutForm__sectionBody}>
+                            {section === 'shipping' ?
+                                <ShippingForm
+                                    setValues={setShippingValues}
+                                    shippingValues={shippingValues}
+                                    setSection={setSection} /> :
+                                <Details values={shippingValues} section="shipping" />}
+                        </div>
+                        <CheckoutHeading
+                            complete={haveBillingInfo && section !== 'billing'}
+                            current={section === 'billing'}
+                            section="billing"
+                            setSection={setSection}>
+                            2. Billing
+                    </CheckoutHeading>
+                        <div className={styles.checkoutForm__sectionBody}>
+                            {section === 'billing' ?
+                                <BillingForm
+                                    billingValues={billingValues}
+                                    sameAsShipping={sameAsShipping}
+                                    setSameAsShipping={setSameAsShipping}
+                                    setValues={setBillingValues}
+                                    setSection={setSection}
+                                    shippingValues={shippingValues} /> :
+                                haveBillingInfo && <Details values={sameAsShipping ? shippingValues : billingValues} section="billing" />}
+                        </div>
+                        <CheckoutHeading
+                            complete={false}
+                            current={section === 'payment'}
+                            section="payment"
+                            setSection={setSection}>
+                            3. Payment
+                    </CheckoutHeading>
+
+                    {section === 'payment' && stripeError && 
+                        <div className="error">{stripeError}</div>
+                    }
+
                     <div className={styles.checkoutForm__sectionBody}>
-                        {section === 'shipping' ?
-                            <ShippingForm
-                                setValues={setShippingValues}
-                                shippingValues={shippingValues}
-                                setSection={setSection} /> :
-                            <Details values={shippingValues} section="shipping" />}
-                    </div>
-                    <CheckoutHeading
-                        complete={haveBillingInfo && section !== 'billing'}
-                        current={section === 'billing'}
-                        section="billing"
-                        setSection={setSection}>
-                        2. Billing
-                </CheckoutHeading>
-                    <div className={styles.checkoutForm__sectionBody}>
-                        {section === 'billing' ?
-                            <BillingForm
-                                billingValues={billingValues}
-                                sameAsShipping={sameAsShipping}
-                                setSameAsShipping={setSameAsShipping}
-                                setValues={setBillingValues}
-                                setSection={setSection}
-                                shippingValues={shippingValues} /> :
-                            haveBillingInfo && <Details values={sameAsShipping ? shippingValues : billingValues} section="billing" />}
-                    </div>
-                    <CheckoutHeading
-                        complete={false}
-                        current={section === 'payment'}
-                        section="payment"
-                        setSection={setSection}>
-                        3. Payment
-                </CheckoutHeading>
-                    <div className={styles.checkoutForm__sectionBody}>
-                        {section === 'payment' &&
+                        {section === 'payment' && clientSecret &&
                             <PaymentForm
                                 clientSecret={clientSecret}
                                 billingValues={billingValues}

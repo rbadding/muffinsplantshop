@@ -24,15 +24,16 @@ const Home = ({ data, location }) => {
             <div className="content-container">
                 <h2 className="heading-first">Easy to grow</h2>
                 <div className={styles.home__contentGrid}>
-                    {data.products.edges.map(({ node }) => {
+                    {data.aamu.ProductCollection.map((node) => {
                         return (
                             <ProductItem
                                 key={node.id}
                                 product={{
-                                    slug: node.fields.slug,
-                                    fluid: node.frontmatter.imageAbs.childImageSharp.fluid,
-                                    title: node.frontmatter.title,
-                                    minPrice: _minPrice(node.frontmatter.priceBySize)
+                                    slug: node.slug,
+                                    fluid: node.image.image.childImageSharp.fluid,
+                                    title: node.title,
+                                    category: node.category,
+                                    minPrice: _minPrice(node.variants)
                                 }} />
                         )
                     })}
@@ -58,31 +59,62 @@ const Home = ({ data, location }) => {
 
 const query = graphql`
   query {
-  products: allMarkdownRemark(filter: {frontmatter: {feature: {eq: "Easy to grow"}}}, sort: {order: ASC, fields: frontmatter___title}) {
-    edges {
-      node {
-        frontmatter {
+    aamu {
+        ProductCollection(pagination: {limit: 4}) {
+            id
+            slug
+            created
+            updated
             title
-            sku
-            feature
-            imageAbs {
-                childImageSharp {
-                    fluid(fit: COVER, maxWidth: 358, maxHeight: 488, cropFocus: CENTER) {
-                        ...GatsbyImageSharpFluid
+            description
+            image {
+                url
+                image {
+                  id
+                  childImageSharp {
+                    id
+                    fluid {
+                      base64
+                      tracedSVG
+                      srcWebp
+                      srcSetWebp
+                      originalImg
+                      originalName
+                      presentationWidth
+                      presentationHeight
+                      aspectRatio
+                      src
+                      srcSet
+                      sizes
                     }
-                }
+                  }
+                }                
             }
-            priceBySize {
+            variants {
+                id
+                created
+                updated
+                title
                 price
+                available
+            }
+            category {
+                id
+                slug
+                created
+                updated
+                title
+            }
+            plantCare {
+                id
+                created
+                updated
+                light
+                water
             }
         }
-        id
-        fields {
-          slug
-        }
-      }
     }
-  }
+
   about: allMarkdownRemark(filter: {frontmatter: {contentType: {eq: "page"}, page: {eq: "about"}}}) {
     edges {
       node {

@@ -1,3 +1,8 @@
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const config = require('./config-server.js');
+
+require('dotenv').config();
+
 /**
  * Configure your Gatsby site with this file.
  *
@@ -5,13 +10,21 @@
  */
 
 module.exports = {
+  developMiddleware: (app) => {
+    app.use(
+      '/.netlify/functions/',
+      createProxyMiddleware({
+        target: 'http://localhost:9000',
+        pathRewrite: {
+          '/.netlify/functions/': '',
+        },
+      })
+    )
+  },
   siteMetadata: {
     title: `Muffin's Plants`,
     description: `A demo e-commerce website built with Gatsby.js`,
     author: `nh_writes`,
-  },
-  mapping: {
-    'MarkdownRemark.frontmatter.priceBySize.size': `SizesJson`,
   },
   plugins: [
     {
@@ -29,18 +42,20 @@ module.exports = {
     `gatsby-transformer-remark`,
     `gatsby-transformer-json`,
     {
-      resolve: `gatsby-plugin-prefetch-google-fonts`,
+      resolve: `gatsby-plugin-webfonts`,
       options: {
-        fonts: [
-          {
-            family: `Source Sans Pro`,
-            variants: [`300`, `400`, `500`]
-          },
-          {
-            family: `Montserrat`,
-            variants: [`400`, `500`]
-          },
-        ],
+        fonts: {
+          google: [
+            {
+              family: `Source Sans Pro`,
+              variants: [`300`, `400`, `500`]
+            },
+            {
+              family: `Montserrat`,
+              variants: [`400`, `500`]
+            },
+          ],
+        },
       },
     },
     `gatsby-plugin-sharp`,
@@ -48,7 +63,7 @@ module.exports = {
     {
       resolve: "gatsby-remark-normalize-paths",
       options: {
-          pathFields: ["imageAbs"],
+          pathFields: ["image"],
       },
     },
     {
@@ -60,5 +75,20 @@ module.exports = {
       }
     },
     `gatsby-plugin-react-helmet`,
+    {
+      resolve: 'gatsby-source-graphql',
+      options: {
+        // Arbitrary name for the remote schema Query type
+        typeName: `Aamu`,
+        // Field under which the remote schema will be accessible. You'll use this in your Gatsby query
+        fieldName: `aamu`,
+        // Url to query from
+        url: config.AAMU_ENDPOINT,
+        headers: {
+          "x-api-key": process.env.AAMU_API_KEY
+        },
+      }
+    }
+
   ],
 }

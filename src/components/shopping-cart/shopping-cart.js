@@ -5,17 +5,19 @@ import { useCartContext } from '../../../wrap-with-provider';
 import { cartQuantityTotal, cartAmountTotal } from '../../selectors/cartQuantity';
 import styles from './shopping-cart.module.css';
 
-const AddToCart = ({ title, price, sku, size, imageSrc }) => {
+const AddToCart = ({ title, price, sku, variant, imageSrc }) => {
     const { cartDispatch } = useCartContext();
     const notification = useRef(null);
 
     const add = () => {
         cartDispatch({
             type: 'ADD_TO_CART',
-            product: { title, price, sku, size, quantity: 1, imageSrc }
+            product: { title, price, sku, variant, quantity: 1, imageSrc }
         });
 
-        notification.current.textContent = `${title} - ${size} added to cart`;
+        // console.log({ title, price, sku, variant, imageSrc });
+
+        notification.current.textContent = `${title} - ${variant.title} added to cart`;
         notification.current.style.display = 'block';
         setTimeout(() => {
             if (notification.current) {
@@ -38,37 +40,42 @@ const AddToCart = ({ title, price, sku, size, imageSrc }) => {
     )
 }
 
+
 const CartItem = ({ product }) => {
     const { cartDispatch } = useCartContext();
 
-    const updateQuantity = (sku, quantity) => {
+    const updateQuantity = (product, quantity) => {
         cartDispatch({
             type: 'UPDATE_QUANTITY',
-            sku,
+            product,
             quantity
         })
     }
 
-    const handleUpdateQuantity = ({ sku }) => (e) => {
+    const handleUpdateQuantity = (product) => (e) => {
         const quantity = e.target.value;
         if (quantity === '' || parseInt(quantity, 10) > 0) {
-            updateQuantity(sku, quantity)
+            updateQuantity(product, quantity)
         }
     }
 
-    const handleDecreaseQuantity = ({ sku, quantity }) => () => {
+    const handleDecreaseQuantity = (product) => () => {
+        const quantity = product.quantity;
+
         const newQuantity = parseInt(quantity, 10) - 1;
-        updateQuantity(sku, newQuantity < 1 ? 1 : newQuantity);
+        updateQuantity(product, newQuantity < 1 ? 1 : newQuantity);
     }
 
-    const handleIncreaseQuantity = ({ sku, quantity }) => () => {
-        updateQuantity(sku, parseInt(quantity, 10) + 1);
+    const handleIncreaseQuantity = (product) => () => {
+        const quantity = product.quantity;
+
+        updateQuantity(product, parseInt(quantity, 10) + 1);
     }
 
-    const handleDeleteProduct = (sku) => () => {
+    const handleDeleteProduct = (product) => () => {
         cartDispatch({
             type: 'REMOVE_FROM_CART',
-            sku
+            product
         })
     }
     return (
@@ -78,7 +85,7 @@ const CartItem = ({ product }) => {
                 className={styles.shoppingCart__cartItemImage}
                 src={product.imageSrc} />
             <div className={styles.shoppingCart__cartItemDetails}>
-                <p>{`${product.title} - ${product.size}`}</p>
+                <p>{`${product.title} - ${product.variant.title}`}</p>
                 <p className="text-light">{numeral(parseFloat(product.price)).format('$0,0.00')}</p>
                 <div className={styles.shoppingCart__quantity}>
                     <button
@@ -91,6 +98,7 @@ const CartItem = ({ product }) => {
                         className={styles.shoppingCart__quantityInput}
                         onChange={handleUpdateQuantity(product)}
                         type="number"
+                        step="any"
                         value={product.quantity} />
                     <button
                         aria-label="decrease quantity"
@@ -103,7 +111,7 @@ const CartItem = ({ product }) => {
                 <button
                     className={styles.shoppingCart__deleteCartItemButton}
                     type="button"
-                    onClick={handleDeleteProduct(product.sku)}>
+                    onClick={handleDeleteProduct(product)}>
                     Remove
                         </button>
             </div>

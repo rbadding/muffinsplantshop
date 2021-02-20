@@ -11,6 +11,11 @@ html {
     font-size: 16px;
     margin: 0;
     padding: 0;
+    min-height: 101%;
+}
+
+body {
+    padding-top: 100px;
 }
 
 a {
@@ -27,12 +32,14 @@ p, span {
     padding: 0;
 }
 
-p {
-    margin: 0.5rem 0;
-}
-
 button {
     cursor: pointer;
+}
+
+hr {
+    border: none;
+    height: 1px;
+    background: #ccc;
 }
 
 .content-container {
@@ -90,6 +97,20 @@ button {
 #card-element {
     border: solid 1px rgba(0,0,0, 0.85);
     padding: 1rem;
+}
+
+.error {
+    color: red;
+    padding: 1em 2em;
+    background: #ffe7e7;
+}
+
+.warning {
+    color: #4e4905;
+    background: #fbfbd7;
+    border: solid 1px #dada9f;
+    padding: 1em 2em;
+    border-radius: 3px;
 }
 
 @media screen and (min-width: 1000px) {

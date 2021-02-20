@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useStaticQuery, graphql, Link } from 'gatsby';
 import { useCartContext } from '../../../wrap-with-provider';
 import { CartButton, Cart } from '../shopping-cart/shopping-cart';
-import PromoBar from '../promo-bar/promo-bar';
 import styles from './layout.module.css';
 
-const Layout = ({ children, location }) => {
+// Close the cart when the route changes
+// There is probably a better way to do this
+let state = 0;
+
+const Layout = ({ children, location, prevLocation }) => {
     const path = location.pathname;
     const data = useStaticQuery(graphql`
         query {
@@ -18,35 +21,34 @@ const Layout = ({ children, location }) => {
     `)
 
     const [isOpenMenu, setIsOpenMenu] = useState(false);
-    const { isOpenCart } = useCartContext();
-
-    useEffect(() => {
-        if (isOpenCart) {
-            document.body.setAttribute('style', 'overflow-y:hidden; position: fixed; left: 0; right: 0');
-        } else {
-            document.body.setAttribute('style', '');
-        }
-    }, [isOpenCart])
+    const { isOpenCart, setIsOpenCart } = useCartContext();
+    
+    // Close the cart when the route changes
+    // There is probably a better way to do this.
+    // Note that this didn't work: https://stackoverflow.com/a/58524372 ... 
+    if (location.state && location.state.key && state !== location.state.key) {
+        state = location.state.key;
+        setIsOpenCart(false);
+    }
 
     return (
         <div id="root" className={`${isOpenCart && styles.layout__cartOpen}`}>
-            <PromoBar />
-            <div className={styles.layout}>
-                <header className={styles.layout__header}>
-                    <div style={{ display: `flex` }}>
-                        {path !== '/checkout' && <button
-                            aria-label="Toggle navigation menu"
-                            className={styles.layout__menuButton}
-                            onClick={() => setIsOpenMenu(!isOpenMenu)}>
-                        </button>}
-                        <Link to="/">
-                            <h1 className={styles.layout__headerText}>
-                                {data.site.siteMetadata.title}
-                            </h1>
-                        </Link>
-                    </div>
+            <header className={styles.layout__header}>
+                <div style={{ display: `flex` }} className={styles.layout+' '+styles.layout__headerInner}>
+                    {path !== '/checkout' && <button
+                        aria-label="Toggle navigation menu"
+                        className={styles.layout__menuButton}
+                        onClick={() => setIsOpenMenu(!isOpenMenu)}>
+                    </button>}
+                    <Link to="/">
+                        <h1 className={styles.layout__headerText}>
+                            {data.site.siteMetadata.title}
+                        </h1>
+                    </Link>
                     {path !== '/checkout' && <CartButton />}
-                </header>
+                </div>
+            </header>        
+            <div className={styles.layout}>
                 {path !== '/checkout' && <div
                     className={`${styles.layout__navigationMenuWrapper} 
                     ${isOpenMenu ? styles.layout__navigationOpen : ''}`}>
@@ -64,18 +66,20 @@ const Layout = ({ children, location }) => {
                 {children}
                 <footer className={styles.layout__footer}>
                     <div className={styles.layout__footerLinks}>
-                        <Link className={styles.layout__footerLink} to="/delivery-info">Delivery Info</Link>
-                        <Link className={styles.layout__footerLink} to="/about">About</Link>
-                        <a
-                            className={styles.layout__footerSocialIcons}
-                            href="https://instagram.com">
-                            <span className="screen-reader-only">Instagram</span>
-                        </a>
+                        <div>
+                            <Link className={styles.layout__footerLink} to="/delivery-info">Delivery Info</Link>
+                            <Link className={styles.layout__footerLink} to="/about">About</Link>
+                            <a
+                                className={styles.layout__footerSocialIcons}
+                                href="https://instagram.com">
+                                <span className="screen-reader-only">Instagram</span>
+                            </a>
+                        </div>
+                        <p>{data.site.siteMetadata.title} {(new Date()).getFullYear()}</p>
                     </div>
-                    <p>{data.site.siteMetadata.title} {(new Date()).getFullYear()}</p>
                 </footer>
             </div>
-            {isOpenCart && (<div style={{ backgroundColor: `white`, position: `absolute`, top: 0, right: 0, width: `100%`, maxWidth: 400, height: `100vh`, boxShadow: `-4px 0px 2px 0px rgba(0,0,0, 0.12)`, overflowY: `auto` }}>
+            {isOpenCart && (<div className={styles.layout__shoppingCart} style={{ backgroundColor: `white`, position: `fixed`, top: 0, right: 0, width: `100%`, maxWidth: 400, height: `100vh`, boxShadow: `-4px 0px 30px 0px rgba(0,0,0, 0.06)`, overflowY: `auto`, zIndex: 2 }}>
                 <Cart />
             </div>)}
         </div>

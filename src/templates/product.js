@@ -8,9 +8,8 @@ import { AddToCart } from '../components/shopping-cart/shopping-cart';
 import styles from './products.module.css';
 
 const Product = ({ data, location }) => {
-    const productData = data.product.frontmatter;
-    const productBody = data.product.html;
-    const [priceSize, setSize] = useState(productData.priceBySize[0]);
+    const productData = data.aamu.Product;
+    const [variant, setVariant] = useState(productData.variants.sort((a, b) => a.price - b.price)[0]);
 
     return (
         <Layout location={location}>
@@ -18,45 +17,43 @@ const Product = ({ data, location }) => {
             <div className={styles.products__container}>
 
                 <Img
-                    fluid={productData.imageAbs.childImageSharp.fluid}
+                    fluid={productData.image.image.childImageSharp.fluid}
                     alt={productData.title}
                     style={{ border: `solid 1px #EEEEEE` }}
                 />
                 <div>
                     <h2 className={styles.products__title}>{productData.title}</h2>
-                    <p className={styles.products__descriptionBrief}>{productData.description}</p>
-                    <div dangerouslySetInnerHTML={{ __html: productBody }} />
+                    <p className={styles.products__descriptionBrief} dangerouslySetInnerHTML={{__html: productData.description}}></p>
                     <span className={styles.products__sku}>SKU: {productData.sku}</span>
                     <h3 className={styles.products__sizeHeading}>Size</h3>
                     {
-                        productData.priceBySize.map((priceSizeObj) => {
-                            const { size: _size } = priceSizeObj;
+                        productData.variants.sort((a, b) => a.price - b.price).map((_variant) => {
                             return (
-                                <span key={_size.label}>
+                                <span key={_variant.id}>
                                     <input
                                         className={styles.products__sizeOption}
                                         type="radio"
-                                        name="size"
-                                        value={_size.label}
-                                        id={_size.label}
-                                        checked={_size.label === priceSize.size.label}
-                                        onChange={() => setSize({ ...priceSizeObj })} />
-                                    <label htmlFor={_size.label}>
-                                        <span className={styles.products__sizeLabel}>{_size.label}</span>
-                                        <span className={styles.products__sizeDescription}>{_size.longDescription}</span>
+                                        name="variant"
+                                        value={_variant.id}
+                                        checked={_variant.id === variant.id}
+                                        id={_variant.id}
+                                        onChange={() => setVariant({ ..._variant })} />
+                                    <label htmlFor={_variant.id}>
+                                        <span className={styles.products__sizeLabel}>{_variant.title}</span>
+                                        <span className={styles.products__sizeDescription}>{_variant.description}</span>
                                     </label>
                                 </span>
                             )
                         })
                     }
-                    <p className={styles.products__price}>{numeral(priceSize.price).format('$0,0.00')}</p>
+                    <p className={styles.products__price}>{numeral(variant.price).format('$0,0.00')}</p>
                     <div className={styles.products__addToCartButtonWrapper}>
                         <AddToCart
                             title={productData.title}
-                            price={priceSize.price}
+                            price={variant.price}
                             sku={productData.sku}
-                            size={priceSize.size.label}
-                            imageSrc={productData.imageAbs.childImageSharp.fluid.src} />
+                            variant={variant}
+                            imageSrc={productData.image.image.childImageSharp.fluid.src} />
                     </div>
                     <Link
                         className="link-with-arrow"
@@ -95,30 +92,63 @@ const Product = ({ data, location }) => {
 // the $slug is the variable passed into the template via the context property from createPage function
 const query = graphql`
     query($slug: String!) {
-        product: markdownRemark(fields: { slug: { eq: $slug } }) {
-            html
-            frontmatter {
+        aamu {
+            Product(slug: $slug) {
+              id
+              created
+              updated
+              title
+              slug
+              description
+              sku
+              image {
+                url
+                image {
+                  id
+                  childImageSharp {
+                    id
+                    fluid {
+                      base64
+                      tracedSVG
+                      srcWebp
+                      srcSetWebp
+                      originalImg
+                      originalName
+                      presentationWidth
+                      presentationHeight
+                      aspectRatio
+                      src
+                      srcSet
+                      sizes
+                    }
+                  }
+                }
+              }
+              variants {
+                id
+                created
+                updated
                 title
-                description
-                sku
-                priceBySize {
-                    price
-                    size {
-                        label
-                        longDescription
-                    }
-                }
-                imageAbs {
-                    childImageSharp {
-                        fluid(fit: COVER, maxWidth: 358, maxHeight: 488, cropFocus: CENTER) {
-                            ...GatsbyImageSharpFluid
-                        }
-                    }
-                }
-                plantCare {
-                    light
-                    water
-                }
+                price
+                variantOf
+                available
+              }
+              category {
+                id
+                slug
+                created
+                updated
+                title
+              }
+              plantCare {
+                id
+                created
+                updated
+                light
+                water
+                careOf
+              }
+
             }
         }
     }    

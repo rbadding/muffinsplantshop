@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "graphql-request": "^3.4.0",
     "stripe": "^8.107.0"
   }
 }

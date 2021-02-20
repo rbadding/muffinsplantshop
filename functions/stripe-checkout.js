@@ -1,37 +1,46 @@
+require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const inventory = require('./data/inventory.json');
+const cartQuantityTotal = require('../src/selectors/cartQuantity').cartQuantityTotal;
+const cartAmountTotal = require('../src/selectors/cartQuantity').cartAmountTotal;
 const shippingInventory = require('./data/shipping.json');
 const taxrates = require('./data/taxrates.json');
+const calculateOrderAmount = require('./calculateOrderAmount.js');
 
-const calculateOrderAmount = (items, shipping, state) => {
-    const totalAmount = items.reduce((total, item) => {
-        // get price against inventory
-        const product = inventory.find((inventory_item) => inventory_item.sku === item.sku.split("-")[0]);
-        const amount = product.priceBySize.find((productSize) => productSize.size === item.size).price;
-        return total + (100 * amount * item.quantity)
-    }, 0);
+exports.handler = async (event, context) => {
 
-    // get shipping price against inventory
-    const shippingAmount = 100 * shippingInventory.find((ship_method) => ship_method.shipping_method === shipping).shipping_amount
+	if (!process.env.STRIPE_SECRET_KEY) {
+		return {
+			statusCode: 500,
+			body: JSON.stringify({ error: 'No Stripe API key' })
+		};		
+	}
 
-    // get tax rate
-    const taxAmount = taxrates.find((tax) => tax.state === state).total_tax_rate
+	try {
+		const { items, shipping, state } = JSON.parse(event.body);
 
-    return Math.round((totalAmount + shippingAmount) * (taxAmount + 1));
-}
+		const cartSummary = await calculateOrderAmount(items, shipping, state);
 
-exports.handler = async function (event) {
-    const { items, shipping, state } = JSON.parse(event.body);
+		// const metadata = cartSummary.items.map((item) => item.title + ` (${item.variant.title})` + ': ' + item.quantity)
+		const metadata = {};
+		cartSummary.items.forEach((item) => metadata[`${item.title} (${item.variant.title})`] = item.quantity);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-        amount: calculateOrderAmount(items, shipping, state),
-        currency: "CAD"
-    });
+		const paymentIntent = await stripe.paymentIntents.create({
+			amount: cartSummary.total,
+			metadata,
+			currency: "CAD"
+		});
 
-    return {
-        statusCode: 200,
-        body: JSON.stringify({
-            clientSecret: paymentIntent.client_secret
-        })
-    };
+		return {
+			statusCode: 200,
+			body: JSON.stringify({
+				clientSecret: paymentIntent.client_secret
+			})
+		};
+	}
+	catch (error) {
+		return {
+			statusCode: 500,
+			body: JSON.stringify({ error: error.toString() })
+		};		
+	}
 }

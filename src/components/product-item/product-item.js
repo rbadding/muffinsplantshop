@@ -7,7 +7,7 @@ import styles from './product-item.module.css';
 const ProductItem = ({ product }) => {
     return (
         <div className={styles.productItem}>
-            <Link to={product.slug}>
+            <Link to={'/'+product.category.slug+'/'+product.slug}>
                 <Img 
                     fluid={product.fluid}
                     alt={product.title}

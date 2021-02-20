@@ -1,3 +1,18 @@
+.shoppingCart__main input::-webkit-outer-spin-button,
+.shoppingCart__main input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.shoppingCart__main input[type=number]{
+    -moz-appearance: textfield;
+}
+
+
+.shoppingCart__main {
+    padding-top: 2em;
+}
+
 .shoppingCart__cartButton {
     background: transparent;
     border: none;
