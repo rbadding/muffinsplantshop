@@ -32,6 +32,8 @@ const Layout = ({ children, location, prevLocation }) => {
     }
 
     return (
+        <>
+        <a target="_blank" href="https://github.com/AamuApp/muffinsplantshop"><img loading="lazy" width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_darkblue_121621.png?resize=149%2C149" style={{position: 'fixed',  top: 0, right: 0, zIndex: 2}} alt="Fork me on GitHub" data-recalc-dims="1" /></a>
         <div id="root" className={`${isOpenCart && styles.layout__cartOpen}`}>
             <header className={styles.layout__header}>
                 <div style={{ display: `flex` }} className={styles.layout+' '+styles.layout__headerInner}>
@@ -83,6 +85,7 @@ const Layout = ({ children, location, prevLocation }) => {
                 <Cart />
             </div>)}
         </div>
+        </>
     );
 }
 
