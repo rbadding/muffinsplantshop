@@ -1,3 +1,3 @@
 module.exports = {
-	stripe: 'stripe_public_key',
+	stripe: 'pk_test_3Y7OXxxaKOtoMlrwwcNKI790',
 }
